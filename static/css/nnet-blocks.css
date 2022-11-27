@@ -1,0 +1,56 @@
+.cnn-prediction-block .input-image {
+    display: block;
+    width: 128px;
+    height: 128px;
+    border: solid 1px #CCC;
+    padding: 1px;
+}
+
+.cnn-prediction-block .prediction-bars {
+    width: 300px;
+    margin: 0 10px;
+}
+
+.cnn-prediction-block .prediction-bars .prediction-bar {
+    display: block;
+    position: relative;
+    border: solid 1px #AAA;
+    margin-bottom: 3px;
+}
+
+.cnn-prediction-block .prediction-bars .prediction-bar .prediction-bar-progress {
+    display: block;
+    position: absolute;
+    height: 100%;
+    background-color: #E0E0E0;
+    z-index: 100;
+}
+
+.cnn-prediction-block .prediction-bars .prediction-bar.valid .prediction-bar-progress {
+    background-color: #CEC;
+}
+
+.cnn-prediction-block .prediction-bars .prediction-bar.invalid-output .prediction-bar-progress {
+    background-color: #ECC;
+}
+
+.cnn-prediction-block .prediction-bars .prediction-bar.invalid-target .prediction-bar-progress {
+    background-color: #CCE;
+    font-weight: bold;
+}
+
+.cnn-prediction-block .prediction-bars .prediction-bar .prediction-bar-percent {
+    display: block;
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    z-index: 101;
+    color: #555;
+}
+
+.cnn-prediction-block .prediction-bars .prediction-bar .prediction-bar-label {
+    display: block;
+    position: relative;
+    z-index: 101;
+}

@@ -1,0 +1,7 @@
+{{define "layout/main/menu-top"}}
+    {{if . }}
+        <ul class="nav navbar-nav">
+            {{range . }}<li><a href="{{.Href}}">{{.Text}}</a></li>{{end}}
+        </ul>
+    {{end}}
+{{end}}

@@ -1,0 +1,11 @@
+{{define "layout/main/menu-left"}}
+<ul class="nav nav-sidebar">
+{{range . }}
+    <li>
+        <a href="{{.Href}}">
+            {{if .Icon }}<span class="{{.Icon}}"></span>{{end}} &nbsp; {{.Text}}
+        </a>
+    </li>
+{{end}}
+</ul>
+{{end}}
