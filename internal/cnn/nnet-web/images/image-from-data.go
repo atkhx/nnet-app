@@ -16,7 +16,7 @@ func CreateImagesFromDataMatrixesWithAverageValues(data *data.Data) ([][]byte, e
 
 	for z := 0; z < mz; z++ {
 		img := image.NewGray(image.Rect(0, 0, mw, mh))
-		min, max := data.GetMinMaxValues(z*mw*mh, (z+1)*mw*mh)
+		min, max := data.GetMinMaxValuesInRange(z*mw*mh, (z+1)*mw*mh)
 		max -= min
 
 		for y := 0; y < mh; y++ {
@@ -42,7 +42,7 @@ func CreateImageFromDataWithAverageValues(data *data.Data) ([]byte, error) {
 	var w, h, d int
 	data.ExtractDimensions(&w, &h, &d)
 
-	min, max := data.GetMinMaxValues(0, len(data.Data))
+	min, max := data.GetMinMaxValuesInRange(0, len(data.Data))
 	max -= min
 
 	if d == 1 {
