@@ -29,6 +29,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+// test
+
 const (
 	clientIdMnist    = "mnist"
 	clientIdCifar10  = "cifar10"
