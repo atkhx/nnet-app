@@ -259,7 +259,7 @@ function NNetClient(netid) {
             duration.push([durationCounter, event.data]);
             durationCounter++;
 
-            if (duration.length > 100) {
+            if (duration.length > 50) {
                 duration.shift();
             }
 
