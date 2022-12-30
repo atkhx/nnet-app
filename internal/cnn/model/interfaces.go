@@ -7,14 +7,14 @@ import (
 
 type Network interface {
 	Init() error
-	Activate(inputs *data.Data) *data.Data
+	Forward(inputs *data.Data) *data.Data
 	Backward(deltas *data.Data) (gradient *data.Data)
 	GetLayersCount() int
 	GetLayer(index int) nnet.Layer
 }
 
 type Trainer interface {
-	Activate(inputs, target *data.Data) *data.Data
+	Forward(inputs, target *data.Data) *data.Data
 	UpdateWeights()
 }
 

@@ -228,7 +228,7 @@ func (m *NetModel) TrainingStart() error {
 					}
 
 					t := time.Now()
-					output = trainer.Activate(input, target)
+					output = trainer.Forward(input, target)
 					actDuration = time.Now().Sub(t)
 
 					resultIndex, targetIndex := m.getPrediction(output, target)
@@ -305,7 +305,7 @@ func (m *NetModel) processTestSamples(testsOffset, testsCount int) (int64, float
 			return 0, 0, err
 		}
 
-		output := m.network.Activate(input)
+		output := m.network.Forward(input)
 		resultIndex, targetIndex := m.getPrediction(output, target)
 
 		loss := m.lossFunction.GetError(target.Data, output.Data)
