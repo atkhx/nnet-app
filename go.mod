@@ -9,7 +9,7 @@ require (
 )
 
 require (
-	github.com/atkhx/nnet v0.0.0-20221230182006-0a8d7c155bd6 // indirect
+	github.com/atkhx/nnet v0.0.0-20230114075912-9eb436e379b8 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

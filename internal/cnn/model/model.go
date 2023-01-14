@@ -160,19 +160,27 @@ func (m *NetModel) TrainingStart() error {
 	samplesCount := m.dataset.GetSamplesCount()
 
 	fmt.Println("train start")
-	fmt.Println("samples count:", samplesCount)
 
 	testsCount := 1000
 
 	epochs := 30
-	chunk := 5000
-	chunksCount := (samplesCount / chunk) - 1
-	statChunk := 1000
+	chunk := 100
+	chunksCount := ((samplesCount - testsCount) / chunk) - 1
+	//chunksCount = 100
+	statChunk := chunk
+
+	fmt.Println("samples count:", samplesCount)
+	fmt.Println("tests count:", testsCount)
+	fmt.Println("training chunk size:", chunk)
+	fmt.Println("training chunks count:", chunksCount)
+	fmt.Println("training epochs count:", epochs)
+	fmt.Println("send stats after train index:", statChunk)
 
 	avgLoss := 0.0
 	success := 0
 
 	for e := 0; e < epochs; e++ {
+		fmt.Println("start epoch", e)
 		for c := 0; c < chunksCount; c++ {
 			for trainIndex := c * chunk; trainIndex < (c+1)*chunk; trainIndex++ {
 				select {
@@ -182,7 +190,6 @@ func (m *NetModel) TrainingStart() error {
 				}
 
 				sampleIdx := trainIndex
-				//sampleIdx := c*chunk + rand.Intn(chunk)
 
 				var actDuration time.Duration
 				var output *data.Data
@@ -192,57 +199,19 @@ func (m *NetModel) TrainingStart() error {
 					return err
 				}
 
-				for i := 0; i < 1; i++ {
-					if i == 1 {
-						iWidth, iHeight, iDepth := 0, 0, 0
-						input.ExtractDimensions(&iWidth, &iHeight, &iDepth)
+				t := time.Now()
+				output = trainer.Forward(input, target)
+				actDuration = time.Now().Sub(t)
 
-						inputRot := input.Copy()
-						for d := 0; d < iDepth; d++ {
-							for y := 0; y < iHeight; y++ {
-								for x := 0; x < iWidth; x++ {
-									inputRot.Data[d*iHeight*iWidth+x*iHeight+y] =
-										input.Data[d*iHeight*iWidth+y*iHeight+x]
-								}
-							}
-						}
+				resultIndex, targetIndex := m.getPrediction(output, target)
 
-						input = inputRot
-					}
+				avgLoss += m.lossFunction.GetError(target.Data, output.Data)
 
-					if i == 2 {
-						iWidth, iHeight, iDepth := 0, 0, 0
-						input.ExtractDimensions(&iWidth, &iHeight, &iDepth)
-
-						inputRot := input.Copy()
-						for d := 0; d < iDepth; d++ {
-							for y := 0; y < iHeight; y++ {
-								for x := 0; x < iWidth; x++ {
-									inputRot.Data[d*iHeight*iWidth+y*iHeight+x] =
-										input.Data[d*iHeight*iWidth+y*iHeight+(iWidth-1-x)]
-								}
-							}
-						}
-
-						input = inputRot
-					}
-
-					t := time.Now()
-					output = trainer.Forward(input, target)
-					actDuration = time.Now().Sub(t)
-
-					resultIndex, targetIndex := m.getPrediction(output, target)
-
-					loss := m.lossFunction.GetError(target.Data, output.Data)
-					avgLoss += loss
-
-					successPrediction := resultIndex == targetIndex
-					if successPrediction {
-						success++
-					}
-
-					trainer.UpdateWeights()
+				if resultIndex == targetIndex {
+					success++
 				}
+
+				trainer.UpdateWeights()
 
 				if (trainIndex-1)%statChunk == 0 {
 					m.sendLayersInfo()
@@ -254,14 +223,14 @@ func (m *NetModel) TrainingStart() error {
 
 					m.notifier.SendDuration(actDuration)
 					m.notifier.SendLoss(
-						avgLoss/(1*float64(statChunk)),
-						testAvgLoss/(1*float64(statChunk)),
+						avgLoss/float64(statChunk),
+						testAvgLoss/float64(testsCount),
 					)
 
 					m.notifier.SendSuccessRate(
-						100*float64(success)/(1*float64(statChunk)),
+						100*float64(success)/float64(statChunk),
 						//0,
-						100*float64(testSuccess)/(1*float64(testsCount)),
+						100*float64(testSuccess)/float64(testsCount),
 					)
 
 					avgLoss = 0.0
@@ -361,21 +330,21 @@ func (m *NetModel) sendLayersInfo() {
 			}
 		}
 
-		if l, ok := iLayer.(nnet.WithWeights); ok {
-			if b, err := images.CreateImagesFromDataMatrixesWithAverageValues(l.GetWeights()); err != nil {
-				log.Println(errors.Wrap(err, "cant create output images"))
-			} else {
-				info.WeightsImages = b
-			}
-		}
-
-		if l, ok := iLayer.(nnet.WithWeightGradients); ok {
-			if b, err := images.CreateImagesFromDataMatrixesWithAverageValues(l.GetWeightGradients()); err != nil {
-				log.Println(errors.Wrap(err, "cant create output images"))
-			} else {
-				info.WeightsGradients = b
-			}
-		}
+		//if l, ok := iLayer.(nnet.WithWeights); ok {
+		//	if b, err := images.CreateImagesFromDataMatrixesWithAverageValues(l.GetWeights()); err != nil {
+		//		log.Println(errors.Wrap(err, "cant create output images"))
+		//	} else {
+		//		info.WeightsImages = b
+		//	}
+		//}
+		//
+		//if l, ok := iLayer.(nnet.WithWeightGradients); ok {
+		//	if b, err := images.CreateImagesFromDataMatrixesWithAverageValues(l.GetWeightGradients()); err != nil {
+		//		log.Println(errors.Wrap(err, "cant create output images"))
+		//	} else {
+		//		info.WeightsGradients = b
+		//	}
+		//}
 
 		m.notifier.SendTrainLayerInfo(info)
 	}
