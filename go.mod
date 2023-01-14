@@ -14,3 +14,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+
+replace (
+	github.com/atkhx/nnet => /Users/aatikhonov/go/src/github.com/atkhx/nnet
+)
