@@ -11,7 +11,6 @@ import (
 	"github.com/atkhx/nnet/layer/fc"
 	"github.com/atkhx/nnet/layer/maxpooling"
 	"github.com/atkhx/nnet/layer/softmax"
-	"github.com/atkhx/nnet/loss"
 	basic_ffn "github.com/atkhx/nnet/net"
 	"github.com/atkhx/nnet/trainer"
 	"github.com/atkhx/nnet/trainer/methods"
@@ -56,7 +55,6 @@ func TrainerConstructor() func(net model.Network) model.Trainer {
 	return func(net model.Network) model.Trainer {
 		return trainer.New(
 			net,
-			loss.NewClassification(),
 			methods.Adadelta(trainer.Ro, trainer.Eps),
 			//methods.Adagard(0.01, trainer.Eps),
 			//methods.Nesterov(0.01, 0.9),
