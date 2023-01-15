@@ -1,7 +1,7 @@
-github.com/atkhx/nnet v0.0.0-20230114143055-dbdf161da526 h1:/Idkh0QAj+ZuyRoZEQZzIuhHQNOWXCkHN+poRoxvB3A=
-github.com/atkhx/nnet v0.0.0-20230114143055-dbdf161da526/go.mod h1:rVqAqTTmyyK/RGkTe6X+EOiQuk5dxxZTA0BgJdqzZko=
 github.com/atkhx/nnet v0.0.0-20230115101409-c44e072b8223 h1:OlSYWQjQT+kz8B3XCrPVe9TKeXxCgFpyDuCLc0RELCg=
 github.com/atkhx/nnet v0.0.0-20230115101409-c44e072b8223/go.mod h1:rVqAqTTmyyK/RGkTe6X+EOiQuk5dxxZTA0BgJdqzZko=
+github.com/atkhx/nnet v0.0.0-20230115170639-2b6cc436a6f9 h1:zXKkBQaIvU1EAN2Mzk8bLmVvLS+RtMaUIoH1wfIPPhc=
+github.com/atkhx/nnet v0.0.0-20230115170639-2b6cc436a6f9/go.mod h1:rVqAqTTmyyK/RGkTe6X+EOiQuk5dxxZTA0BgJdqzZko=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

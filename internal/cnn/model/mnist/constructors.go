@@ -1,7 +1,6 @@
 package mnist
 
 import (
-	"github.com/atkhx/nnet-app/internal/cnn/model"
 	"github.com/atkhx/nnet/dataset"
 	"github.com/atkhx/nnet/dataset/mnist"
 	"github.com/atkhx/nnet/layer/activation"
@@ -12,25 +11,12 @@ import (
 	basic_ffn "github.com/atkhx/nnet/net"
 	"github.com/atkhx/nnet/trainer"
 	"github.com/atkhx/nnet/trainer/methods"
-	"github.com/pkg/errors"
+
+	"github.com/atkhx/nnet-app/internal/cnn/model"
 )
 
 func CreateDataset() (dataset.Dataset, error) {
-	imagesFile, err := mnist.OpenImagesFile("./data/mnist/train-images-idx3-ubyte")
-	if err != nil {
-		return nil, err
-	}
-
-	labelsFile, err := mnist.OpenLabelsFile("./data/mnist/train-labels-idx1-ubyte")
-	if err != nil {
-		return nil, err
-	}
-
-	dataset, err := mnist.New(imagesFile, labelsFile)
-	if err != nil {
-		return nil, errors.Wrap(err, "create dataset failed")
-	}
-	return dataset, nil
+	return mnist.CreateTrainingDataset("./data/mnist/")
 }
 
 func NetworkConstructor() func() model.Network {
