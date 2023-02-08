@@ -15,8 +15,8 @@ import (
 	"github.com/atkhx/nnet-app/internal/cnn/model"
 )
 
-func CreateDataset() (dataset.Dataset, error) {
-	return mnist.CreateTrainingDataset("./data/mnist/")
+func CreateDataset(datasetPath string) (dataset.Dataset, error) {
+	return mnist.CreateTrainingDataset(datasetPath)
 }
 
 func NetworkConstructor() func() model.Network {

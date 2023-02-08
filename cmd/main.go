@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+
+	"github.com/pkg/errors"
 
 	"github.com/atkhx/nnet-app/internal/app"
 	"github.com/atkhx/nnet-app/internal/app/handler/http/index"
@@ -26,10 +29,7 @@ import (
 	"github.com/atkhx/nnet-app/internal/pkg/ws/client"
 	"github.com/atkhx/nnet-app/internal/pkg/ws/listener"
 	"github.com/atkhx/nnet-app/internal/pkg/ws/router"
-	"github.com/pkg/errors"
 )
-
-// test
 
 const (
 	clientIdMnist    = "mnist"
@@ -46,7 +46,7 @@ func main() {
 	}()
 
 	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
+		log.Println(http.ListenAndServe(app.PprofAddr, nil))
 	}()
 
 	ctx := context.Background()
@@ -60,7 +60,8 @@ func main() {
 
 	wsActions := actions.NewRegistry()
 
-	wsPort := "8080"
+	wsHost := app.ServerHost
+	wsPort := app.ServerPort
 
 	{
 		netModel, e := mnist.CreateModel(clientIdMnist, bus)
@@ -77,7 +78,7 @@ func main() {
 		wsActions.Add("mnist.training-stop", training_stop.HandleFunc(netModel))
 
 		// http handler
-		http.HandleFunc("/mnist/", network.HandleFunc(tpls, "MNIST CNN Example", clientIdMnist, wsPort))
+		http.HandleFunc("/mnist/", network.HandleFunc(tpls, "MNIST CNN Example", clientIdMnist, wsHost, wsPort))
 	}
 
 	{
@@ -95,7 +96,7 @@ func main() {
 		wsActions.Add("cifar10.training-stop", training_stop.HandleFunc(netModel))
 
 		// http handler
-		http.HandleFunc("/cifar-10/", network.HandleFunc(tpls, "CIFAR-10 CNN Example", clientIdCifar10, wsPort))
+		http.HandleFunc("/cifar-10/", network.HandleFunc(tpls, "CIFAR-10 CNN Example", clientIdCifar10, wsHost, wsPort))
 	}
 
 	{
@@ -113,13 +114,13 @@ func main() {
 		wsActions.Add("cifar100.training-stop", training_stop.HandleFunc(netModel))
 
 		// http handler
-		http.HandleFunc("/cifar-100/", network.HandleFunc(tpls, "CIFAR-100 CNN Example", clientIdCifar100, wsPort))
+		http.HandleFunc("/cifar-100/", network.HandleFunc(tpls, "CIFAR-100 CNN Example", clientIdCifar100, wsHost, wsPort))
 	}
 
 	wsActions.Add("subscribe", subscribe.HandleFunc(bus))
 	wsActions.Add("unsubscribe", unsubscribe.HandleFunc(bus))
 
-	http.HandleFunc("/", index.HandleFunc(tpls, "NNET Lib examples", "8080"))
+	http.HandleFunc("/", index.HandleFunc(tpls, "NNET Lib examples", wsHost, wsPort))
 	http.Handle("/static/", http.FileServer(http.Dir(app.RootPath)))
 
 	http.Handle("/ws/", listener.Listener(
@@ -129,5 +130,5 @@ func main() {
 		router.Router(wsActions),
 	))
 
-	err = http.ListenAndServe("localhost:8080", nil)
+	err = http.ListenAndServe(fmt.Sprintf("%s:%s", app.ServerHost, app.ServerPort), nil)
 }

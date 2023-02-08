@@ -17,14 +17,16 @@ type Views interface {
 	Render(w io.Writer, layout, view string, layoutData, viewData map[string]interface{}) error
 }
 
-func HandleFunc(views Views, title, clientId, wsPort string) http.HandlerFunc {
+func HandleFunc(views Views, title, clientId, wsHost, wsPort string) http.HandlerFunc {
 	layoutData := map[string]interface{}{
 		"title":  title,
+		"wsHost": wsHost,
 		"wsPort": wsPort,
 	}
 
 	viewData := map[string]interface{}{
 		"netClientId": clientId,
+		"wsHost":      wsHost,
 		"wsPort":      wsPort,
 	}
 

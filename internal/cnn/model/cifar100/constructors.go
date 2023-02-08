@@ -3,7 +3,6 @@ package cifar100
 import (
 	"log"
 
-	"github.com/atkhx/nnet-app/internal/cnn/model"
 	"github.com/atkhx/nnet/dataset"
 	cifar_100 "github.com/atkhx/nnet/dataset/cifar-100"
 	"github.com/atkhx/nnet/layer/activation"
@@ -15,14 +14,16 @@ import (
 	"github.com/atkhx/nnet/trainer"
 	"github.com/atkhx/nnet/trainer/methods"
 	"github.com/pkg/errors"
+
+	"github.com/atkhx/nnet-app/internal/cnn/model"
 )
 
-func CreateDataset(cifar100File string) dataset.Dataset {
-	dataset, err := cifar_100.Open(cifar100File, true)
+func CreateDataset(datasetPath string) dataset.Dataset {
+	d, err := cifar_100.CreateTrainingDataset(datasetPath)
 	if err != nil {
 		log.Fatalln(errors.Wrap(err, "can't open train cifar dataset"))
 	}
-	return dataset
+	return d
 }
 
 func NetworkConstructor() func() model.Network {

@@ -21,7 +21,7 @@
 <script type="text/javascript">
 
 $(function() {
-    wsListener.wsClient.open("ws://localhost:{{ .wsPort }}/ws/")
+    wsListener.wsClient.open("ws://{{.wsHost}}:{{ .wsPort }}/ws/")
     wsListener.Bind("current.time", "global", function(event) {
         $("#current-time").html(event.data)
     })

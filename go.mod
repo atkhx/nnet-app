@@ -3,7 +3,7 @@ module github.com/atkhx/nnet-app
 go 1.19
 
 require (
-	github.com/atkhx/nnet v0.0.1
+	github.com/atkhx/nnet v0.0.2
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.0
 	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f
