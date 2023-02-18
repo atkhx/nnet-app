@@ -12,7 +12,6 @@ import (
 	"github.com/atkhx/nnet/layer/softmax"
 	basic_ffn "github.com/atkhx/nnet/net"
 	"github.com/atkhx/nnet/trainer"
-	"github.com/atkhx/nnet/trainer/methods"
 	"github.com/pkg/errors"
 
 	"github.com/atkhx/nnet-app/internal/cnn/model"
@@ -31,7 +30,7 @@ func NetworkConstructor() func() model.Network {
 		return basic_ffn.New(cifar_10.ImageWidth, cifar_10.ImageHeight, 3, basic_ffn.Layers{
 			conv.New(
 				conv.FilterSize(3),
-				conv.FiltersCount(16),
+				conv.FiltersCount(32),
 				conv.Padding(1),
 			),
 			activation.NewReLu(),
@@ -40,6 +39,12 @@ func NetworkConstructor() func() model.Network {
 				maxpooling.Stride(2),
 			),
 
+			conv.New(
+				conv.FilterSize(3),
+				conv.FiltersCount(16),
+				conv.Padding(1),
+			),
+			activation.NewReLu(),
 			conv.New(
 				conv.FilterSize(3),
 				conv.FiltersCount(16),
@@ -58,12 +63,6 @@ func NetworkConstructor() func() model.Network {
 
 func TrainerConstructor() func(net model.Network) model.Trainer {
 	return func(net model.Network) model.Trainer {
-		return trainer.New(
-			net,
-			//methods.Adadelta(trainer.Ro, trainer.Eps),
-			methods.Adagard(0.01, trainer.Eps),
-			//methods.Nesterov(0.01, 0.9),
-			5,
-		)
+		return trainer.New(net, trainer.WithBatchSize(10))
 	}
 }

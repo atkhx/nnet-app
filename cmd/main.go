@@ -84,7 +84,7 @@ func main() {
 	{
 		netModel, e := cifar10.CreateModel(clientIdCifar10, bus)
 		if e != nil {
-			e = err
+			err = e
 			return
 		}
 
@@ -102,7 +102,7 @@ func main() {
 	{
 		netModel, e := cifar100.CreateModel(clientIdCifar100, bus)
 		if e != nil {
-			e = err
+			err = e
 			return
 		}
 

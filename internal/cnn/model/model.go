@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -12,12 +11,13 @@ import (
 	"time"
 
 	"github.com/atkhx/nnet"
-	"github.com/atkhx/nnet-app/internal/cnn/nnet-web/blocks"
-	"github.com/atkhx/nnet-app/internal/cnn/nnet-web/images"
-	"github.com/atkhx/nnet-app/internal/cnn/nnet-web/notifications"
 	"github.com/atkhx/nnet/data"
 	"github.com/atkhx/nnet/dataset"
 	"github.com/pkg/errors"
+
+	"github.com/atkhx/nnet-app/internal/cnn/nnet-web/blocks"
+	"github.com/atkhx/nnet-app/internal/cnn/nnet-web/images"
+	"github.com/atkhx/nnet-app/internal/cnn/nnet-web/notifications"
 )
 
 func New(
@@ -64,7 +64,6 @@ type NetModel struct {
 
 	trainContext context.Context
 	trainCancel  func()
-	trainIndex   int
 }
 
 func (m *NetModel) Create() error {
@@ -98,7 +97,7 @@ func (m *NetModel) Load() error {
 	rand.Seed(time.Now().UnixNano())
 	n := m.networkConstructor()
 
-	b, err := ioutil.ReadFile(m.filename)
+	b, err := os.ReadFile(m.filename)
 	if err != nil {
 		return errors.Wrap(err, "cant read file")
 	}
@@ -129,7 +128,7 @@ func (m *NetModel) Save() error {
 		return errors.Wrap(err, "cant marshal net")
 	}
 
-	if err := ioutil.WriteFile(m.filename, b, os.ModePerm); err != nil {
+	if err := os.WriteFile(m.filename, b, os.ModePerm); err != nil {
 		return errors.Wrap(err, "cant write file")
 	}
 	return nil
@@ -201,7 +200,7 @@ func (m *NetModel) TrainingStart() error {
 
 				t := time.Now()
 				output = trainer.Forward(input, target)
-				actDuration = time.Now().Sub(t)
+				actDuration = time.Since(t)
 
 				resultIndex, targetIndex := m.getPrediction(output, target)
 

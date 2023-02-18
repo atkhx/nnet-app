@@ -10,7 +10,6 @@ import (
 	"github.com/atkhx/nnet/layer/softmax"
 	basic_ffn "github.com/atkhx/nnet/net"
 	"github.com/atkhx/nnet/trainer"
-	"github.com/atkhx/nnet/trainer/methods"
 
 	"github.com/atkhx/nnet-app/internal/cnn/model"
 )
@@ -54,12 +53,6 @@ func NetworkConstructor() func() model.Network {
 
 func TrainerConstructor() func(net model.Network) model.Trainer {
 	return func(net model.Network) model.Trainer {
-		return trainer.New(
-			net,
-			//methods.Adadelta(trainer.Ro, trainer.Eps),
-			methods.Adagard(0.01, trainer.Eps),
-			//methods.Nesterov(0.01, 0.9),
-			10,
-		)
+		return trainer.New(net, trainer.WithBatchSize(10))
 	}
 }

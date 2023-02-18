@@ -4,8 +4,10 @@ import (
 	"context"
 )
 
+type subscriberId string
+
 const (
-	contextKeySubscriberId = "subscriberId"
+	contextKeySubscriberId = subscriberId("subscriberId")
 )
 
 func ContextWithSubscriberId(ctx context.Context, clientId int64) context.Context {

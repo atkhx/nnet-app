@@ -12,7 +12,7 @@ func TestRegistry_Add(t *testing.T) {
 	t.Run("AddNew", func(t *testing.T) {
 		callsCount := 0
 		actionName := "name1"
-		actionFunc := func(ctx context.Context) error {
+		actionFunc := func(ctx context.Context, params any) error {
 			callsCount++
 			return nil
 		}
@@ -23,7 +23,7 @@ func TestRegistry_Add(t *testing.T) {
 		actualActionFunc, actualErr := actions.Get(actionName)
 
 		if assert.NoError(t, actualErr) {
-			assert.NoError(t, actualActionFunc(context.Background()))
+			assert.NoError(t, actualActionFunc(context.Background(), nil))
 			assert.Equal(t, 1, callsCount)
 		}
 	})
@@ -32,12 +32,12 @@ func TestRegistry_Add(t *testing.T) {
 		callsCount := 0
 		actionName := "name1"
 
-		actionFunc1 := func(ctx context.Context) error {
+		actionFunc1 := func(ctx context.Context, params any) error {
 			assert.Fail(t, "should not be executed")
 			return nil
 		}
 
-		actionFunc2 := func(ctx context.Context) error {
+		actionFunc2 := func(ctx context.Context, params any) error {
 			callsCount++
 			return nil
 		}
@@ -49,7 +49,7 @@ func TestRegistry_Add(t *testing.T) {
 		actualActionFunc, actualErr := actions.Get(actionName)
 
 		if assert.NoError(t, actualErr) {
-			assert.NoError(t, actualActionFunc(context.Background()))
+			assert.NoError(t, actualActionFunc(context.Background(), nil))
 			assert.Equal(t, 1, callsCount)
 		}
 	})
@@ -67,7 +67,7 @@ func TestRegistry_Get(t *testing.T) {
 
 	t.Run("Unknown", func(t *testing.T) {
 		actions := NewRegistry()
-		actions.Add("name1", func(ctx context.Context) error {
+		actions.Add("name1", func(ctx context.Context, params any) error {
 			return errors.New("func1 should not be executed")
 		})
 
@@ -82,22 +82,22 @@ func TestRegistry_Get(t *testing.T) {
 		callsCount := 0
 
 		actions := NewRegistry()
-		actions.Add("name1", func(ctx context.Context) error {
+		actions.Add("name1", func(ctx context.Context, params any) error {
 			return errors.New("func1 should not be executed")
 		})
 
-		actions.Add("name2", func(ctx context.Context) error {
+		actions.Add("name2", func(ctx context.Context, params any) error {
 			callsCount++
 			return nil
 		})
 
-		actions.Add("name3", func(ctx context.Context) error {
+		actions.Add("name3", func(ctx context.Context, params any) error {
 			return errors.New("func3 should not be executed")
 		})
 
 		actualActionFunc, actualErr := actions.Get("name2")
 		if assert.NoError(t, actualErr) {
-			assert.NoError(t, actualActionFunc(context.Background()))
+			assert.NoError(t, actualActionFunc(context.Background(), nil))
 			assert.Equal(t, 1, callsCount)
 		}
 	})
@@ -111,7 +111,7 @@ func TestRegistry_Del(t *testing.T) {
 
 	t.Run("Unknown", func(t *testing.T) {
 		actions := NewRegistry()
-		actions.Add("name1", func(ctx context.Context) error {
+		actions.Add("name1", func(ctx context.Context, params any) error {
 			return errors.New("func1 should not be executed")
 		})
 		actions.Del("name2")
@@ -123,7 +123,7 @@ func TestRegistry_Del(t *testing.T) {
 
 	t.Run("Exists", func(t *testing.T) {
 		actions := NewRegistry()
-		actions.Add("name1", func(ctx context.Context) error {
+		actions.Add("name1", func(ctx context.Context, params any) error {
 			return errors.New("func1 should not be executed")
 		})
 		actions.Del("name1")

@@ -7,6 +7,11 @@ download_mnist=${workdir}/vendor/github.com/atkhx/nnet/dataset/mnist/download.sh
 download_cifar_10=${workdir}/vendor/github.com/atkhx/nnet/dataset/cifar-10/download.sh
 download_cifar_100=${workdir}/vendor/github.com/atkhx/nnet/dataset/cifar-100/download.sh
 
+.PHONY: lint
+lint:
+	golangci-lint cache clean
+	golangci-lint run ./... -v --timeout 120s
+
 .PHONY: run
 run:
 	go run cmd/main.go
