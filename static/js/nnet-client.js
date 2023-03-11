@@ -17,35 +17,41 @@ function NNetClient(netid) {
     self.BindWsEvents = function (wsListener) {
         self.wsListener = wsListener;
 
-        self.netbox.find('.network-create').bind('click', function () {
+        // self.netbox.find('.network-create').bind('click', function () {
+
+        $('.network-create').bind('click', function () {
             self.wsListener.wsClient.sendJSON({
                 code: self.eventCode( "create"),
                 data: {}
             });
         });
 
-        self.netbox.find('.network-load').bind('click', function () {
+        // self.netbox.find('.network-load').bind('click', function () {
+        $('.network-load').bind('click', function () {
             self.wsListener.wsClient.sendJSON({
                 code: self.eventCode( "load"),
                 data: {}
             });
         });
 
-        self.netbox.find('.network-save').bind('click', function () {
+        // self.netbox.find('.network-save').bind('click', function () {
+        $('.network-save').bind('click', function () {
             self.wsListener.wsClient.sendJSON({
                 code: self.eventCode( "save"),
                 data: {}
             });
         });
 
-        self.netbox.find('.training-start').bind('click', function () {
+        // self.netbox.find('.training-start').bind('click', function () {
+        $('.training-start').bind('click', function () {
             self.wsListener.wsClient.sendJSON({
                 code: self.eventCode( "training-start"),
                 data: {}
             });
         });
 
-        self.netbox.find('.training-stop').bind('click', function () {
+        // self.netbox.find('.training-stop').bind('click', function () {
+        $('.training-stop').bind('click', function () {
             self.wsListener.wsClient.sendJSON({
                 code: self.eventCode("training-stop"),
                 data: {}
@@ -53,53 +59,100 @@ function NNetClient(netid) {
         });
 
         self.wsListener.Bind(self.eventCode("prediction-block"), self.wsRecipient, function (event) {
-            let predictionBlock = self.netbox.find('.cnn-prediction-block');
+            let predictionBlock = self.netbox.find('.cnn-prediction-block .panel-body');
             if (predictionBlock.length === 0) {
                 return;
             }
 
-            let inputImage = predictionBlock.find('.input-image');
-            if (inputImage.length > 0) {
-                inputImage[0].src = 'data:image/png;base64,' + event.data.image;
-            }
-
-            let predictionBars = predictionBlock.find('.prediction-bars');
-            if (predictionBars.length > 0) {
+            let output = '';
+            for (i = 0; i < event.data.length; i++) {
                 let predictions = '';
+                let predictionEvent = event.data[i]
+                if (predictionEvent.predictions.length > 0) {
+                    for (let i = 0; i < predictionEvent.predictions.length; i++) {
+                        let percent = predictionEvent.predictions[i].percent;
+                        let validClass = '';
 
-                for (let i = 0; i < event.data.predictions.length; i++) {
-                    let percent = event.data.predictions[i].percent;
-                    let validClass = '';
-
-                    if (event.data.valid) {
-                        if (event.data.predictions[i].label === event.data.target) {
-                            validClass = 'valid';
+                        if (predictionEvent.valid) {
+                            if (predictionEvent.predictions[i].label === predictionEvent.target) {
+                                validClass = 'valid';
+                            }
+                        } else if (predictionEvent.predictions[i].label === predictionEvent.target) {
+                            validClass = 'invalid-target';
+                        } else if (predictionEvent.predictions[i].label === predictionEvent.output) {
+                            validClass = 'invalid-output';
                         }
-                    } else if (event.data.predictions[i].label === event.data.target) {
-                        validClass = 'invalid-target';
-                    } else if (event.data.predictions[i].label === event.data.output) {
-                        validClass = 'invalid-output';
-                    }
 
-                    predictions += '' +
-                        '<div class="prediction-bar '+validClass+'">' +
-                        '<div class="prediction-bar-progress" style="width: ' + percent + '%"></div>' +
-                        '<div class="prediction-bar-label">' +
-                            event.data.predictions[i].label + ': ' +
-                            event.data.predictions[i].value +
-                        '</div>'+
-                        '<div class="prediction-bar-percent">' + percent + '%</div>'+
-                        '</div>';
+                        predictions += '' +
+                            '<div class="prediction-bar '+validClass+'">' +
+                            '<div class="prediction-bar-progress" style="width: ' + percent + '%"></div>' +
+                            '<div class="prediction-bar-label">' +
+                            predictionEvent.predictions[i].label + ': ' +
+                            predictionEvent.predictions[i].value +
+                            '</div>'+
+                            '<div class="prediction-bar-percent">' + percent + '%</div>'+
+                            '</div>';
+                    }
                 }
 
-                predictionBars.html(predictions);
-
-                // $("#" + self.netboxid + " .train-output-data").html(
-                //     '<div>target: ' + event.data.target + '</div>' +
-                //     '<div>result: ' + event.data.result + '</div>'
-                // );
+                output += '<table>\n' +
+                    '<tr>\n' +
+                    '<td valign="top">\n' +
+                    '<img class="input-image" src="data:image/png;base64,'+predictionEvent.image+'">\n' +
+                    '</td>\n' +
+                    '<td valign="top">\n' +
+                    '<div class="prediction-bars">'+predictions+'</div>\n' +
+                    '</td>\n' +
+                    '</tr>\n' +
+                    '</table>';
             }
+
+            predictionBlock.html(output + '<div style="clear: both"></div>');
         });
+        //
+        // self.wsListener.Bind(self.eventCode("prediction-block"), self.wsRecipient, function (event) {
+        //     let predictionBlock = self.netbox.find('.cnn-prediction-block');
+        //     if (predictionBlock.length === 0) {
+        //         return;
+        //     }
+        //
+        //     let inputImage = predictionBlock.find('.input-image');
+        //     if (inputImage.length > 0) {
+        //         inputImage[0].src = 'data:image/png;base64,' + event.data.image;
+        //     }
+        //
+        //     let predictionBars = predictionBlock.find('.prediction-bars');
+        //     if (predictionBars.length > 0) {
+        //         let predictions = '';
+        //
+        //         for (let i = 0; i < event.data.predictions.length; i++) {
+        //             let percent = event.data.predictions[i].percent;
+        //             let validClass = '';
+        //
+        //             if (event.data.valid) {
+        //                 if (event.data.predictions[i].label === event.data.target) {
+        //                     validClass = 'valid';
+        //                 }
+        //             } else if (event.data.predictions[i].label === event.data.target) {
+        //                 validClass = 'invalid-target';
+        //             } else if (event.data.predictions[i].label === event.data.output) {
+        //                 validClass = 'invalid-output';
+        //             }
+        //
+        //             predictions += '' +
+        //                 '<div class="prediction-bar '+validClass+'">' +
+        //                 '<div class="prediction-bar-progress" style="width: ' + percent + '%"></div>' +
+        //                 '<div class="prediction-bar-label">' +
+        //                     event.data.predictions[i].label + ': ' +
+        //                     event.data.predictions[i].value +
+        //                 '</div>'+
+        //                 '<div class="prediction-bar-percent">' + percent + '%</div>'+
+        //                 '</div>';
+        //         }
+        //
+        //         predictionBars.html(predictions);
+        //     }
+        // });
 
         self.wsListener.Bind(self.eventCode("train-layer-info"), self.wsRecipient, function (event) {
             var box = $("#" + self.netboxid + " .train-layer-info-"+event.data.Index);
@@ -209,7 +262,7 @@ function NNetClient(netid) {
             checkLossData.push([trainLossIndex, event.data.testLoss]);
             trainLossIndex++;
 
-            if (trainLossData.length > 50) {
+            if (trainLossData.length > 25) {
                 trainLossData.shift();
                 checkLossData.shift();
             }

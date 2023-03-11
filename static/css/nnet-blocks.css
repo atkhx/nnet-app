@@ -1,13 +1,18 @@
+.cnn-prediction-block table {
+    float: left;
+    margin: 3px 0 0 3px;
+}
+
 .cnn-prediction-block .input-image {
     display: block;
-    width: 128px;
-    height: 128px;
+    width: 50px;
+    height: 50px;
     border: solid 1px #CCC;
     padding: 1px;
 }
 
 .cnn-prediction-block .prediction-bars {
-    width: 300px;
+    width: 250px;
     margin: 0 10px;
 }
 

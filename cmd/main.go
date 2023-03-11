@@ -20,7 +20,6 @@ import (
 	"github.com/atkhx/nnet-app/internal/app/handler/ws/training-stop"
 	"github.com/atkhx/nnet-app/internal/app/handler/ws/unsubscribe"
 	"github.com/atkhx/nnet-app/internal/cnn/model/cifar10"
-	"github.com/atkhx/nnet-app/internal/cnn/model/cifar100"
 	"github.com/atkhx/nnet-app/internal/cnn/model/mnist"
 	"github.com/atkhx/nnet-app/internal/pkg/eventsbus"
 	"github.com/atkhx/nnet-app/internal/pkg/sequence"
@@ -97,24 +96,6 @@ func main() {
 
 		// http handler
 		http.HandleFunc("/cifar-10/", network.HandleFunc(tpls, "CIFAR-10 CNN Example", clientIdCifar10, wsHost, wsPort))
-	}
-
-	{
-		netModel, e := cifar100.CreateModel(clientIdCifar100, bus)
-		if e != nil {
-			err = e
-			return
-		}
-
-		// websocket commands
-		wsActions.Add("cifar100.create", create.HandleFunc(netModel))
-		wsActions.Add("cifar100.load", load.HandleFunc(netModel))
-		wsActions.Add("cifar100.save", save.HandleFunc(netModel))
-		wsActions.Add("cifar100.training-start", training_start.HandleFunc(netModel))
-		wsActions.Add("cifar100.training-stop", training_stop.HandleFunc(netModel))
-
-		// http handler
-		http.HandleFunc("/cifar-100/", network.HandleFunc(tpls, "CIFAR-100 CNN Example", clientIdCifar100, wsHost, wsPort))
 	}
 
 	wsActions.Add("subscribe", subscribe.HandleFunc(bus))

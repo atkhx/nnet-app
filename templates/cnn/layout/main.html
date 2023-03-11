@@ -46,6 +46,9 @@ $(function() {
             <ul class="nav navbar-nav right">
                 <li><a><span id="current-time"></span></a></li>
             </ul>
+            {{if .showNetworkControls }}
+                {{ template "layout/main/menu-top-netctrl" }}
+            {{end}}
         </div>
     </div>
 </nav>

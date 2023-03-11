@@ -49,7 +49,7 @@ func (n *client) SendLoss(loss, testLoss float64) {
 }
 
 func (n *client) SendDuration(dur time.Duration) {
-	n.eventsBus.Publish(n.createEvent("train-duration", dur/time.Microsecond))
+	n.eventsBus.Publish(n.createEvent("train-duration", dur/time.Millisecond))
 }
 
 func (n *client) SendSuccessRate(train, check float64) {

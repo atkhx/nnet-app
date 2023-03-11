@@ -13,6 +13,8 @@ import (
 	"github.com/atkhx/nnet"
 	"github.com/atkhx/nnet/data"
 	"github.com/atkhx/nnet/dataset"
+	"github.com/atkhx/nnet/layer/conv"
+	"github.com/atkhx/nnet/trainer"
 	"github.com/pkg/errors"
 
 	"github.com/atkhx/nnet-app/internal/cnn/nnet-web/blocks"
@@ -22,8 +24,8 @@ import (
 
 func New(
 	networkConstructor func() Network,
-	trainerConstructor func(net Network) Trainer,
-	lossFunction LossFunction,
+	trainerConstructor func(net Network) trainer.Trainer,
+//lossFunction LossFunction,
 	notifier notifications.Client,
 	dataSet dataset.Dataset,
 	filename string,
@@ -31,7 +33,7 @@ func New(
 	return &NetModel{
 		networkConstructor: networkConstructor,
 		trainerConstructor: trainerConstructor,
-		lossFunction:       lossFunction,
+		//lossFunction:       lossFunction,
 
 		status:   StatusEmpty,
 		dataset:  dataSet,
@@ -50,9 +52,9 @@ type NetModel struct {
 	sync.Mutex
 
 	networkConstructor func() Network
-	trainerConstructor func(net Network) Trainer
+	trainerConstructor func(net Network) trainer.Trainer
 
-	lossFunction LossFunction
+	//lossFunction LossFunction
 
 	status  string
 	network Network
@@ -77,10 +79,6 @@ func (m *NetModel) Create() error {
 	rand.Seed(time.Now().UnixNano())
 	n := m.networkConstructor()
 
-	if err := n.Init(); err != nil {
-		return err
-	}
-
 	m.network = n
 	m.status = StatusReady
 	return nil
@@ -104,10 +102,6 @@ func (m *NetModel) Load() error {
 
 	if err := json.Unmarshal(b, n); err != nil {
 		return errors.Wrap(err, "cant unmarshal net")
-	}
-
-	if err := n.Init(); err != nil {
-		return err
 	}
 
 	m.network = n
@@ -160,7 +154,8 @@ func (m *NetModel) TrainingStart() error {
 
 	fmt.Println("train start")
 
-	testsCount := 1000
+	testsCount := 0
+	batchSize := 2
 
 	epochs := 30
 	chunk := 100
@@ -188,58 +183,63 @@ func (m *NetModel) TrainingStart() error {
 				default:
 				}
 
-				sampleIdx := trainIndex
+				//sampleIdx := trainIndex
 
 				var actDuration time.Duration
-				var output *data.Data
 
-				input, target, err := m.dataset.ReadSample(sampleIdx)
+				input, target, err := m.dataset.ReadRandomSampleBatch(batchSize)
+				//input, target, err := m.dataset.ReadSample(sampleIdx)
 				if err != nil {
 					return err
 				}
 
 				t := time.Now()
-				output = trainer.Forward(input, target)
+				var output *data.Data
+
+				lossObject := trainer.Forward(input, func(out *data.Data) *data.Data {
+					output = data.NewData(out.Data.W, out.Data.H, out.Data.D, data.Copy(out.Data.Data))
+
+					success += m.isSuccessPrediction(output, target)
+					return out.Classification(target).Mean()
+				})
+
 				actDuration = time.Since(t)
+				avgLoss += lossObject.Data.Data[0]
 
-				resultIndex, targetIndex := m.getPrediction(output, target)
-
-				avgLoss += m.lossFunction.GetError(target.Data, output.Data)
-
-				if resultIndex == targetIndex {
-					success++
-				}
-
-				trainer.UpdateWeights()
-
-				if (trainIndex-1)%statChunk == 0 {
+				if trainIndex == 0 || trainIndex%statChunk == 0 {
 					m.sendLayersInfo()
 
-					testSuccess, testAvgLoss, err := m.processTestSamples(samplesCount-testsCount, testsCount)
-					if err != nil {
-						return err
-					}
+					//fmt.Println("avgLoss", avgLoss)
+					//fmt.Println("lossObject.Data", lossObject.Data)
+
+					//testSuccess, testAvgLoss, err := m.processTestSamples(samplesCount-testsCount, testsCount)
+					//if err != nil {
+					//	return err
+					//}
 
 					m.notifier.SendDuration(actDuration)
 					m.notifier.SendLoss(
 						avgLoss/float64(statChunk),
-						testAvgLoss/float64(testsCount),
+						//testAvgLoss/float64(testsCount),
+						0,
 					)
 
 					m.notifier.SendSuccessRate(
-						100*float64(success)/float64(statChunk),
-						//0,
-						100*float64(testSuccess)/float64(testsCount),
+						100*float64(success)/float64(statChunk*batchSize),
+						//100*float64(testSuccess)/float64(testsCount),
+						0,
 					)
 
 					avgLoss = 0.0
 					success = 0
 
-					predictionBlock, err := blocks.NewCNNPredictionBlock(input, output, target, m.dataset.GetLabels())
+					predictionBlock, err := blocks.NewCNNPredictionBlocks(input, output, target, m.dataset.GetLabels())
 					if err != nil {
 						log.Fatalln(err)
 					}
 					m.notifier.SendCNNPredictionBlock(predictionBlock)
+
+					//os.Exit(1)
 				}
 
 			}
@@ -249,43 +249,40 @@ func (m *NetModel) TrainingStart() error {
 	return nil
 }
 
-func (m *NetModel) getPrediction(output, target *data.Data) (resultIndex int, targetIndex int) {
-	var resultValue float64
-	for i := 0; i < 10; i++ {
-		if i == 0 || output.Data[i] > resultValue {
-			resultValue = output.Data[i]
-			resultIndex = i
-		}
+func (m *NetModel) isSuccessPrediction(output, target *data.Data) (successCount int) {
+	for row := 0; row < target.Data.H; row++ {
+		_, resultIndex := output.Data.GetRow(row, 0).GetMax()
+		_, targetIndex := target.Data.GetRow(row, 0).GetMax()
 
-		if target.Data[i] == 1 {
-			targetIndex = i
+		if resultIndex == targetIndex {
+			successCount++
 		}
 	}
 	return
 }
 
-func (m *NetModel) processTestSamples(testsOffset, testsCount int) (int64, float64, error) {
-	var testSuccess int64
-	var testAvgLoss float64
-	for ti := 0; ti < testsCount; ti++ {
-		input, target, err := m.dataset.ReadSample(testsOffset + ti)
-		if err != nil {
-			return 0, 0, err
-		}
-
-		output := m.network.Forward(input)
-		resultIndex, targetIndex := m.getPrediction(output, target)
-
-		loss := m.lossFunction.GetError(target.Data, output.Data)
-		testAvgLoss += loss
-
-		if resultIndex == targetIndex {
-			testSuccess++
-		}
-	}
-
-	return testSuccess, testAvgLoss, nil
-}
+//func (m *NetModel) processTestSamples(testsOffset, testsCount int) (int64, float64, error) {
+//	var testSuccess int64
+//	var testAvgLoss float64
+//	for ti := 0; ti < testsCount; ti++ {
+//		input, target, err := m.dataset.ReadSample(testsOffset + ti)
+//		if err != nil {
+//			return 0, 0, err
+//		}
+//
+//		output := m.network.Forward(input)
+//		resultIndex, targetIndex := m.getPrediction(output, target)
+//
+//		loss := m.lossFunction.GetError(target.Data, output.Data)
+//		testAvgLoss += loss
+//
+//		if resultIndex == targetIndex {
+//			testSuccess++
+//		}
+//	}
+//
+//	return testSuccess, testAvgLoss, nil
+//}
 
 type trainLayerInfo struct {
 	Index     int
@@ -299,6 +296,7 @@ type trainLayerInfo struct {
 
 func (m *NetModel) sendLayersInfo() {
 	for i := 0; i < m.network.GetLayersCount(); i++ {
+		//for i := 0; i < 4; i++ {
 		iLayer := m.network.GetLayer(i)
 		info := trainLayerInfo{
 			Index:     i,
@@ -306,44 +304,39 @@ func (m *NetModel) sendLayersInfo() {
 		}
 
 		if l, ok := iLayer.(nnet.WithGradients); ok {
-			if i == 0 {
-				if b, err := images.CreateImageFromDataWithAverageValues(l.GetInputGradients()); err != nil {
-					log.Println(errors.Wrap(err, "cant create output images"))
-				} else {
-					info.InputGradients = [][]byte{b}
-				}
+			if b, err := images.CreateGrayscaleImagesFromDataMatrixesWithAverageValues(l.GetInputGradients()); err != nil {
+				log.Println(errors.Wrap(err, "cant create output images"))
 			} else {
-				if b, err := images.CreateImagesFromDataMatrixesWithAverageValues(l.GetInputGradients()); err != nil {
-					log.Println(errors.Wrap(err, "cant create output images"))
-				} else {
-					info.InputGradients = b
-				}
+				info.InputGradients = b
 			}
 		}
 
 		if l, ok := iLayer.(nnet.WithOutput); ok {
-			if b, err := images.CreateImagesFromDataMatrixesWithAverageValues(l.GetOutput()); err != nil {
+			if b, err := images.CreateGrayscaleImagesFromDataMatrixesWithAverageValues(l.GetOutput().Data); err != nil {
 				log.Println(errors.Wrap(err, "cant create output images"))
 			} else {
 				info.OutputImages = b
 			}
 		}
 
-		//if l, ok := iLayer.(nnet.WithWeights); ok {
-		//	if b, err := images.CreateImagesFromDataMatrixesWithAverageValues(l.GetWeights()); err != nil {
-		//		log.Println(errors.Wrap(err, "cant create output images"))
-		//	} else {
-		//		info.WeightsImages = b
-		//	}
-		//}
-		//
-		//if l, ok := iLayer.(nnet.WithWeightGradients); ok {
-		//	if b, err := images.CreateImagesFromDataMatrixesWithAverageValues(l.GetWeightGradients()); err != nil {
-		//		log.Println(errors.Wrap(err, "cant create output images"))
-		//	} else {
-		//		info.WeightsGradients = b
-		//	}
-		//}
+		if _, isConv := iLayer.(*conv.Conv); isConv {
+			//if l, ok := iLayer.(nnet.WithWeights); ok {
+			//	if b, err := images.CreateGrayscaleImagesFromDataMatrixesWithAverageValues(l.GetWeights().Transpose()); err != nil {
+			//		log.Println(errors.Wrap(err, "cant create output images"))
+			//	} else {
+			//		info.WeightsImages = b
+			//	}
+			//}
+
+			//if l, ok := iLayer.(nnet.WithWeightGradients); ok {
+			//	if b, err := images.CreateGrayscaleImagesFromDataMatrixesWithAverageValues(l.GetWeightGradients()); err != nil {
+			//		log.Println(errors.Wrap(err, "cant create output images"))
+			//	} else {
+			//		info.WeightsGradients = b
+			//	}
+			//}
+
+		}
 
 		m.notifier.SendTrainLayerInfo(info)
 	}

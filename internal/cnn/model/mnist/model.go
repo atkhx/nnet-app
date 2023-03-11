@@ -1,8 +1,6 @@
 package mnist
 
 import (
-	"github.com/atkhx/nnet/loss"
-
 	"github.com/atkhx/nnet-app/internal/app"
 	"github.com/atkhx/nnet-app/internal/cnn/model"
 	"github.com/atkhx/nnet-app/internal/cnn/nnet-web/notifications"
@@ -21,7 +19,7 @@ func CreateModel(
 	return model.New(
 		NetworkConstructor(),
 		TrainerConstructor(),
-		loss.NewClassification(),
+		//loss.NewClassification(),
 		notifications.New(clientId, bus),
 		dataset,
 		"./cnn-mnist.json",

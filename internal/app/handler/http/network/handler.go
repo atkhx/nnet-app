@@ -19,9 +19,10 @@ type Views interface {
 
 func HandleFunc(views Views, title, clientId, wsHost, wsPort string) http.HandlerFunc {
 	layoutData := map[string]interface{}{
-		"title":  title,
-		"wsHost": wsHost,
-		"wsPort": wsPort,
+		"title":               title,
+		"wsHost":              wsHost,
+		"wsPort":              wsPort,
+		"showNetworkControls": true,
 	}
 
 	viewData := map[string]interface{}{
