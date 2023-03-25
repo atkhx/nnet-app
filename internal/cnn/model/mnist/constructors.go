@@ -9,8 +9,8 @@ import (
 	"github.com/atkhx/nnet/layer/activation"
 	"github.com/atkhx/nnet/layer/conv"
 	"github.com/atkhx/nnet/layer/fc"
+	"github.com/atkhx/nnet/layer/maxpooling"
 	"github.com/atkhx/nnet/layer/reshape"
-	"github.com/atkhx/nnet/layer/softmax"
 	basic_ffn "github.com/atkhx/nnet/net"
 	"github.com/atkhx/nnet/trainer"
 	"github.com/atkhx/nnet/trainer/methods"
@@ -32,18 +32,67 @@ func NetworkConstructor() func() model.Network {
 					mnist.ImageHeight,
 					mnist.ImageDepth,
 				),
-				conv.WithFilterSize(3),
+				conv.WithFilterSize(5),
 				conv.WithFiltersCount(16),
+				conv.WithPadding(2),
 			),
+
+			//activation.NewTanh(),
+			//
+			//reshape.New(func(input *data.Data) (outMatrix *data.Data) {
+			//	return input.Generate(
+			//		data.WrapVolume(
+			//			input.Data.W,
+			//			input.Data.D,
+			//			input.Data.H,
+			//			data.Copy(input.Data.Data),
+			//		),
+			//		func() {
+			//			input.Grad.Data = data.Copy(outMatrix.Grad.Data)
+			//		},
+			//		input,
+			//	)
+			//}),
+			//
+			//batchnorm.New(
+			//	batchnorm.WithInputSize(26*26),
+			//	batchnorm.WithInputDepth(16),
+			//),
+
+			//reshape.New(func(input *data.Data) (outMatrix *data.Data) {
+			//	return input.Generate(
+			//		data.WrapVolume(
+			//			input.Data.W,
+			//			input.Data.D,
+			//			input.Data.H,
+			//			data.Copy(input.Data.Data),
+			//		),
+			//		func() {
+			//			input.Grad.Data = data.Copy(outMatrix.Grad.Data)
+			//		},
+			//		input,
+			//	)
+			//}),
 			activation.NewReLu(),
 
+			maxpooling.New(
+				maxpooling.WithInputSize(
+					28,
+					28,
+					16,
+				),
+				maxpooling.FilterSize(2),
+				maxpooling.Stride(2),
+			),
+
 			conv.New(
-				conv.WithInputSize(26, 26, 16),
+				conv.WithInputSize(14, 14, 16),
 				conv.WithFilterSize(3),
 				conv.WithFiltersCount(10),
-				//conv.WithPadding(1),
+				conv.WithPadding(1),
 			),
 			activation.NewReLu(),
+			//activation.NewTanh(),
 
 			//conv.New(
 			//	conv.WithInputSize(26, 26, 10),
@@ -75,12 +124,17 @@ func NetworkConstructor() func() model.Network {
 			}),
 
 			fc.New(
-				fc.WithInputSize(24*24*10),
+				fc.WithInputSize(14*14*10),
 				//fc.WithInputSize(26*26*64),
 				fc.WithLayerSize(10),
-				fc.WithBiases(true),
+				fc.WithBiases(false),
 			),
-			softmax.New(),
+
+			//batchnorm.New(
+			//	batchnorm.WithInputSize(10),
+			//),
+
+			//softmax.New(),
 		})
 	}
 }
@@ -88,6 +142,7 @@ func NetworkConstructor() func() model.Network {
 func TrainerConstructor() func(net model.Network) trainer.Trainer {
 	return func(net model.Network) trainer.Trainer {
 		return trainer.New(net,
+			//trainer.WithMethod(methods.VanilaSGD(0.1)),
 			trainer.WithMethod(methods.Adadelta(trainer.Ro, trainer.Eps)),
 			//trainer.WithMethod(methods.Adagard(0.01, trainer.Eps)),
 			//trainer.WithL1Decay(0.0001),

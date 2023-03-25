@@ -197,10 +197,14 @@ func (m *NetModel) TrainingStart() error {
 				var output *data.Data
 
 				lossObject := trainer.Forward(input, func(out *data.Data) *data.Data {
-					output = data.NewData(out.Data.W, out.Data.H, out.Data.D, data.Copy(out.Data.Data))
+					output = data.WrapData(out.Data.W, out.Data.H, out.Data.D, out.Softmax().Data.Data)
 
 					success += m.isSuccessPrediction(output, target)
-					return out.Classification(target).Mean()
+					return out.CrossEntropy(target).Mean()
+					//output = data.WrapData(out.Data.W, out.Data.H, out.Data.D, data.Copy(out.Data.Data))
+					//
+					//success += m.isSuccessPrediction(output, target)
+					//return out.Classification(target).Mean()
 				})
 
 				actDuration = time.Since(t)
