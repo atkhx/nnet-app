@@ -35,44 +35,10 @@ func NetworkConstructor() func() model.Network {
 				conv.WithFilterSize(5),
 				conv.WithFiltersCount(16),
 				conv.WithPadding(2),
+				conv.WithBatchSize(model.BatchSize),
+				conv.WithGain(data.ReLuGain),
 			),
 
-			//activation.NewTanh(),
-			//
-			//reshape.New(func(input *data.Data) (outMatrix *data.Data) {
-			//	return input.Generate(
-			//		data.WrapVolume(
-			//			input.Data.W,
-			//			input.Data.D,
-			//			input.Data.H,
-			//			data.Copy(input.Data.Data),
-			//		),
-			//		func() {
-			//			input.Grad.Data = data.Copy(outMatrix.Grad.Data)
-			//		},
-			//		input,
-			//	)
-			//}),
-			//
-			//batchnorm.New(
-			//	batchnorm.WithInputSize(26*26),
-			//	batchnorm.WithInputDepth(16),
-			//),
-
-			//reshape.New(func(input *data.Data) (outMatrix *data.Data) {
-			//	return input.Generate(
-			//		data.WrapVolume(
-			//			input.Data.W,
-			//			input.Data.D,
-			//			input.Data.H,
-			//			data.Copy(input.Data.Data),
-			//		),
-			//		func() {
-			//			input.Grad.Data = data.Copy(outMatrix.Grad.Data)
-			//		},
-			//		input,
-			//	)
-			//}),
 			activation.NewReLu(),
 
 			maxpooling.New(
@@ -90,51 +56,22 @@ func NetworkConstructor() func() model.Network {
 				conv.WithFilterSize(3),
 				conv.WithFiltersCount(10),
 				conv.WithPadding(1),
+				conv.WithBatchSize(model.BatchSize),
+				conv.WithGain(data.ReLuGain),
 			),
 			activation.NewReLu(),
-			//activation.NewTanh(),
 
-			//conv.New(
-			//	conv.WithInputSize(26, 26, 10),
-			//	conv.WithFilterSize(3),
-			//	conv.WithFiltersCount(10),
-			//),
-			//activation.NewReLu(),
-
-			//maxpooling.New(
-			//	maxpooling.FilterSize(2),
-			//	maxpooling.Stride(2),
-			//),
-
-			//flat.New(),
-
-			reshape.New(func(input *data.Data) (outMatrix *data.Data) {
-				return input.Generate(
-					data.WrapVolume(
-						input.Data.W*input.Data.H,
-						input.Data.D,
-						1,
-						data.Copy(input.Data.Data),
-					),
-					func() {
-						input.Grad.Data = data.Copy(outMatrix.Grad.Data)
-					},
-					input,
-				)
+			reshape.New(func(iw, ih, id int) (int, int, int) {
+				return iw * ih, id, 1
 			}),
 
 			fc.New(
 				fc.WithInputSize(14*14*10),
-				//fc.WithInputSize(26*26*64),
 				fc.WithLayerSize(10),
-				fc.WithBiases(false),
+				fc.WithBiases(true),
+				fc.WithBatchSize(model.BatchSize),
+				fc.WithGain(data.LinearGain),
 			),
-
-			//batchnorm.New(
-			//	batchnorm.WithInputSize(10),
-			//),
-
-			//softmax.New(),
 		})
 	}
 }
@@ -142,7 +79,7 @@ func NetworkConstructor() func() model.Network {
 func TrainerConstructor() func(net model.Network) trainer.Trainer {
 	return func(net model.Network) trainer.Trainer {
 		return trainer.New(net,
-			//trainer.WithMethod(methods.VanilaSGD(0.1)),
+			//trainer.WithMethod(methods.VanilaSGD(0.01)),
 			trainer.WithMethod(methods.Adadelta(trainer.Ro, trainer.Eps)),
 			//trainer.WithMethod(methods.Adagard(0.01, trainer.Eps)),
 			//trainer.WithL1Decay(0.0001),

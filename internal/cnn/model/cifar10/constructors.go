@@ -1,7 +1,9 @@
 package cifar10
 
 import (
+	"fmt"
 	"log"
+	"os"
 
 	"github.com/atkhx/nnet/data"
 	"github.com/atkhx/nnet/dataset"
@@ -9,6 +11,7 @@ import (
 	"github.com/atkhx/nnet/layer/activation"
 	"github.com/atkhx/nnet/layer/conv"
 	"github.com/atkhx/nnet/layer/fc"
+	"github.com/atkhx/nnet/layer/lnorm"
 	"github.com/atkhx/nnet/layer/maxpooling"
 	"github.com/atkhx/nnet/layer/reshape"
 	basic_ffn "github.com/atkhx/nnet/net"
@@ -30,67 +33,107 @@ func CreateDataset(datasetPath string) dataset.Dataset {
 func NetworkConstructor() func() model.Network {
 	return func() model.Network {
 		return basic_ffn.New(basic_ffn.Layers{
+
+			// --------------------------------------------------------
+
 			conv.New(
 				conv.WithInputSize(
 					cifar_10.ImageWidth,
 					cifar_10.ImageHeight,
 					3,
 				),
-				conv.WithFilterSize(5),
-				conv.WithFiltersCount(32),
-				conv.WithPadding(2),
+				conv.WithFilterSize(3),
+				conv.WithFiltersCount(10),
+				conv.WithPadding(1),
+				conv.WithBatchSize(model.BatchSize),
+				conv.WithGain(data.ReLuGain),
 			),
+			lnorm.NewLayerNorm(cifar_10.ImageHeight, 10),
 			activation.NewReLu(),
+
+			// --------------------------------------------------------
+
+			//conv.New(
+			//	conv.WithInputSize(
+			//		cifar_10.ImageWidth,
+			//		cifar_10.ImageHeight,
+			//		10,
+			//	),
+			//	conv.WithFilterSize(3),
+			//	conv.WithFiltersCount(10),
+			//	conv.WithPadding(1),
+			//	conv.WithBatchSize(model.BatchSize),
+			//	conv.WithGain(data.ReLuGain),
+			//),
+			//lnorm.NewLayerNorm(cifar_10.ImageHeight, 10),
+			//activation.NewReLu(),
+
+			// --------------------------------------------------------
 
 			maxpooling.New(
 				maxpooling.WithInputSize(
 					32,
 					32,
-					32,
+					10,
 				),
 				maxpooling.FilterSize(2),
 				maxpooling.Stride(2),
 			),
 
+			// --------------------------------------------------------
+
 			conv.New(
 				conv.WithInputSize(
 					16,
 					16,
-					32,
+					10,
 				),
 				conv.WithFilterSize(3),
-				conv.WithFiltersCount(32),
+				conv.WithFiltersCount(10),
 				conv.WithPadding(1),
+				conv.WithBatchSize(model.BatchSize),
+				conv.WithGain(data.ReLuGain),
 			),
+			lnorm.NewLayerNorm(cifar_10.ImageHeight, 10),
 			activation.NewReLu(),
 
-			reshape.New(func(input *data.Data) (outMatrix *data.Data) {
-				return input.Generate(
-					data.WrapVolume(
-						input.Data.W*input.Data.H,
-						input.Data.D,
-						1,
-						data.Copy(input.Data.Data),
-					),
-					func() {
-						input.Grad.Data = data.Copy(outMatrix.Grad.Data)
-					},
-					input,
-				)
+			// --------------------------------------------------------
+
+			conv.New(
+				conv.WithInputSize(
+					16,
+					16,
+					10,
+				),
+				conv.WithFilterSize(3),
+				conv.WithFiltersCount(10),
+				conv.WithPadding(1),
+				conv.WithBatchSize(model.BatchSize),
+				conv.WithGain(data.ReLuGain),
+			),
+			lnorm.NewLayerNorm(16, 8),
+			activation.NewReLu(),
+
+			// --------------------------------------------------------
+
+			reshape.New(func(iw, ih, id int) (int, int, int) {
+				fmt.Println("iw, ih, id", iw, ih, id)
+				fmt.Println("ow, oh, od", iw*ih, id, 1)
+				fmt.Println("-------------------------")
+				os.Exit(1)
+
+				return iw * ih, id, 1
 			}),
 
 			fc.New(
-				fc.WithInputSize(16*16*32),
-				//fc.WithInputSize(26*26*10),
+				fc.WithInputSize(16*16*10),
 				fc.WithLayerSize(10),
-				fc.WithBiases(true),
+				fc.WithBiases(false),
+				fc.WithBatchSize(model.BatchSize),
+				fc.WithGain(data.ReLuGain),
 			),
 
-			//batchnorm.New(
-			//	batchnorm.WithInputSize(10),
-			//),
-
-			//softmax.New(),
+			lnorm.NewLayerNorm(10, 1),
 		})
 	}
 }
@@ -98,6 +141,7 @@ func NetworkConstructor() func() model.Network {
 func TrainerConstructor() func(net model.Network) trainer.Trainer {
 	return func(net model.Network) trainer.Trainer {
 		return trainer.New(net,
+			//trainer.WithMethod(methods.VanilaSGD(0.01)),
 			trainer.WithMethod(methods.Adadelta(trainer.Ro, trainer.Eps)),
 			//trainer.WithMethod(methods.Adagard(0.1, trainer.Eps)),
 			//trainer.WithL1Decay(0.00001),

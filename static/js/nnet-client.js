@@ -183,6 +183,11 @@ function NNetClient(netid) {
                             "<div class='output-images'></div>"
                     ) +
 
+                    (!event.data.Weights ? "" :
+                            "<div>weights</div>" +
+                            "<div class='weights'></div>"
+                    ) +
+
                     "</div>" +
                     "</div>"
                 )
@@ -248,6 +253,89 @@ function NNetClient(netid) {
                     }
 
                     img[0].src = 'data:image/png;base64,' + event.data.WeightsImages[i];
+                }
+            }
+
+            if (event.data.Weights) {
+                var weightsBox = box.find(".weights")
+                let layer = event.data.Index
+
+                for (var i = 0; i < event.data.Weights.length; i++) {
+                    var plotBox = weightsBox.find('div.weights-plot-'+layer+'-'+i);
+                    if (plotBox.length === 0) {
+                        weightsBox.append('<div class="weights-plot-'+layer+'-'+i+'" style="width: 200px; height: 150px; float: left"></div>');
+                    }
+
+                    var min = 0.0
+                    var max = 0.0
+
+                    for (var k = 0; k < event.data.Weights[i].length; k++) {
+                        var v = event.data.Weights[i][k];
+                        if (k === 0 || v < min) {
+                            min = v
+                        }
+                        if (k === 0 || v > max) {
+                            max = v
+                        }
+                    }
+
+                    var cnt = 25;
+                    var step = (max-min)/cnt;
+                    var d = [];
+
+                    for (var k = 0; k < cnt+1; k++) {
+                        d[k] = 0;
+                    }
+
+                    for (var k = 0; k < event.data.Weights[i].length; k++) {
+                        var v = event.data.Weights[i][k];
+                        var idx = Math.floor((v-min)/step);
+                        d[idx]++
+                    }
+
+                    var dd = [];
+                    for (var k = 0; k < d.length; k++) {
+                        dd.push([min+k*step, d[k]])
+                    }
+
+                    $.plot('div.weights-plot-'+layer+'-'+i, [ dd ], {
+                        series: {
+                            bars: {
+                                show: true,
+                                barWidth: 0.01,
+                                align: "center"
+                            }
+                        },
+                        xaxis: {
+                            // mode: "categories",
+                            // showTicks: false,
+                            // gridLines: false
+                        }
+                    });
+                    //
+                    // $.plot('div.weights-plot-'+layer+'-'+i, [
+                    //     {
+                    //         data: dd,
+                    //         lines: { show: true, steps: true, fill: true },
+                    //         yaxis: {
+                    //             show: false
+                    //         }
+                    //     }
+                    // ]);
+                    //
+                    // plot = $.plot('div.weights-plot-'+layer+'-'+i, [dd], {
+                    //     series: {
+                    //         shadowSize: 0
+                    //     },
+                    //     yaxis: {
+                    //         show: true
+                    //     },
+                    //     xaxis: {
+                    //         show: true
+                    //     }
+                    // });
+                    //
+                    // plot.draw();
                 }
             }
         });

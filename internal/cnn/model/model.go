@@ -22,10 +22,12 @@ import (
 	"github.com/atkhx/nnet-app/internal/cnn/nnet-web/notifications"
 )
 
+const BatchSize = 4
+
 func New(
 	networkConstructor func() Network,
 	trainerConstructor func(net Network) trainer.Trainer,
-//lossFunction LossFunction,
+	//lossFunction LossFunction,
 	notifier notifications.Client,
 	dataSet dataset.Dataset,
 	filename string,
@@ -155,7 +157,6 @@ func (m *NetModel) TrainingStart() error {
 	fmt.Println("train start")
 
 	testsCount := 0
-	batchSize := 2
 
 	epochs := 30
 	chunk := 100
@@ -183,12 +184,9 @@ func (m *NetModel) TrainingStart() error {
 				default:
 				}
 
-				//sampleIdx := trainIndex
-
 				var actDuration time.Duration
 
-				input, target, err := m.dataset.ReadRandomSampleBatch(batchSize)
-				//input, target, err := m.dataset.ReadSample(sampleIdx)
+				input, target, err := m.dataset.ReadRandomSampleBatch(BatchSize)
 				if err != nil {
 					return err
 				}
@@ -201,15 +199,12 @@ func (m *NetModel) TrainingStart() error {
 
 					success += m.isSuccessPrediction(output, target)
 					return out.CrossEntropy(target).Mean()
-					//output = data.WrapData(out.Data.W, out.Data.H, out.Data.D, data.Copy(out.Data.Data))
-					//
-					//success += m.isSuccessPrediction(output, target)
-					//return out.Classification(target).Mean()
 				})
 
 				actDuration = time.Since(t)
 				avgLoss += lossObject.Data.Data[0]
 
+				//if trainIndex < 10 || trainIndex%statChunk == 0 {
 				if trainIndex == 0 || trainIndex%statChunk == 0 {
 					m.sendLayersInfo()
 
@@ -221,15 +216,23 @@ func (m *NetModel) TrainingStart() error {
 					//	return err
 					//}
 
+					//if trainIndex >= 10 {
+					avgLoss = avgLoss / float64(statChunk)
+					//} else {
+					//	fmt.Println(lossObject.Data.Data)
+					//	avgLoss = lossObject.Data.Data[0]
+					//}
+
 					m.notifier.SendDuration(actDuration)
 					m.notifier.SendLoss(
-						avgLoss/float64(statChunk),
+						avgLoss,
+						//avgLoss/float64(statChunk),
 						//testAvgLoss/float64(testsCount),
 						0,
 					)
 
 					m.notifier.SendSuccessRate(
-						100*float64(success)/float64(statChunk*batchSize),
+						100*float64(success)/float64(statChunk*BatchSize),
 						//100*float64(testSuccess)/float64(testsCount),
 						0,
 					)
@@ -245,6 +248,10 @@ func (m *NetModel) TrainingStart() error {
 
 					//os.Exit(1)
 				}
+
+				//if trainIndex > 10 {
+				//	return nil
+				//}
 
 			}
 		}
@@ -296,10 +303,19 @@ type trainLayerInfo struct {
 	WeightsGradients [][]byte
 	OutputImages     [][]byte
 	WeightsImages    [][]byte
+	Weights          [][]float64
 }
 
 func (m *NetModel) sendLayersInfo() {
+
 	for i := 0; i < m.network.GetLayersCount(); i++ {
+		// todo move to live settings map
+		showInputGradients := true
+		showOuputImages := true
+		showWeightImages := false
+		showWeightGradients := false
+		showWeightHistogram := false
+
 		//for i := 0; i < 4; i++ {
 		iLayer := m.network.GetLayer(i)
 		info := trainLayerInfo{
@@ -307,15 +323,22 @@ func (m *NetModel) sendLayersInfo() {
 			LayerType: fmt.Sprintf("%T", iLayer),
 		}
 
-		if l, ok := iLayer.(nnet.WithGradients); ok {
+		//_, isRelu := iLayer.(*activation.ReLu)
+		_, isConv := iLayer.(*conv.Conv)
+		showWeightImages = showWeightImages && isConv
+		showWeightGradients = showWeightGradients && isConv
+		//showInputGradients = showInputGradients && !isRelu
+		//showOuputImages = showOuputImages && !isRelu
+
+		if l, ok := iLayer.(nnet.WithGradients); ok && showInputGradients {
 			if b, err := images.CreateGrayscaleImagesFromDataMatrixesWithAverageValues(l.GetInputGradients()); err != nil {
-				log.Println(errors.Wrap(err, "cant create output images"))
+				log.Println(errors.Wrap(err, "cant create input gradients images"))
 			} else {
 				info.InputGradients = b
 			}
 		}
 
-		if l, ok := iLayer.(nnet.WithOutput); ok {
+		if l, ok := iLayer.(nnet.WithOutput); ok && showOuputImages {
 			if b, err := images.CreateGrayscaleImagesFromDataMatrixesWithAverageValues(l.GetOutput().Data); err != nil {
 				log.Println(errors.Wrap(err, "cant create output images"))
 			} else {
@@ -323,23 +346,28 @@ func (m *NetModel) sendLayersInfo() {
 			}
 		}
 
-		if _, isConv := iLayer.(*conv.Conv); isConv {
-			//if l, ok := iLayer.(nnet.WithWeights); ok {
-			//	if b, err := images.CreateGrayscaleImagesFromDataMatrixesWithAverageValues(l.GetWeights().Transpose()); err != nil {
-			//		log.Println(errors.Wrap(err, "cant create output images"))
-			//	} else {
-			//		info.WeightsImages = b
-			//	}
-			//}
+		if l, ok := iLayer.(nnet.WithWeights); ok && showWeightImages {
+			if b, err := images.CreateGrayscaleImagesFromDataMatrixesWithAverageValues(l.GetWeights().Data); err != nil {
+				log.Println(errors.Wrap(err, "cant create weight images"))
+			} else {
+				info.WeightsImages = b
+			}
+		}
 
-			//if l, ok := iLayer.(nnet.WithWeightGradients); ok {
-			//	if b, err := images.CreateGrayscaleImagesFromDataMatrixesWithAverageValues(l.GetWeightGradients()); err != nil {
-			//		log.Println(errors.Wrap(err, "cant create output images"))
-			//	} else {
-			//		info.WeightsGradients = b
-			//	}
-			//}
+		if l, ok := iLayer.(nnet.WithWeights); ok && showWeightGradients {
+			if b, err := images.CreateGrayscaleImagesFromDataMatrixesWithAverageValues(l.GetWeights().Grad); err != nil {
+				log.Println(errors.Wrap(err, "cant create weight gradients images"))
+			} else {
+				info.WeightsGradients = b
+			}
+		}
 
+		if l, ok := iLayer.(*conv.Conv); ok && showWeightHistogram {
+			w := l.GetWeights().Data.Data
+			o := len(w) / l.FiltersCount
+			for j := 0; j < l.FiltersCount; j++ {
+				info.Weights = append(info.Weights, w[j*o:(j+1)*o])
+			}
 		}
 
 		m.notifier.SendTrainLayerInfo(info)

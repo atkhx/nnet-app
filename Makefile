@@ -14,6 +14,7 @@ lint:
 
 .PHONY: run
 run:
+	go mod vendor;
 	go run cmd/main.go
 
 .PHONY: dataset
@@ -21,3 +22,8 @@ dataset:
 	cd ./data/mnist/ && chmod +x ${download_mnist} && bash -c ${download_mnist}
 	cd ./data/cifar-10/ && chmod +x ${download_cifar_10} && bash -c ${download_cifar_10}
 	cd ./data/cifar-100/ && chmod +x ${download_cifar_100} && bash -c ${download_cifar_100}
+
+.PHONY: pprof
+pprof:
+	go tool pprof http://localhost:6060/debug/pprof/profile
+
