@@ -9,6 +9,7 @@ import (
 	"github.com/atkhx/nnet/layer/activation"
 	"github.com/atkhx/nnet/layer/conv"
 	"github.com/atkhx/nnet/layer/fc"
+	"github.com/atkhx/nnet/layer/lnorm"
 	"github.com/atkhx/nnet/layer/maxpooling"
 	"github.com/atkhx/nnet/layer/reshape"
 	basic_ffn "github.com/atkhx/nnet/net"
@@ -38,6 +39,7 @@ func NetworkConstructor() func() model.Network {
 				conv.WithBatchSize(model.BatchSize),
 				conv.WithGain(data.ReLuGain),
 			),
+			lnorm.NewLayerNorm(model.BatchSize),
 
 			activation.NewReLu(),
 
@@ -59,6 +61,7 @@ func NetworkConstructor() func() model.Network {
 				conv.WithBatchSize(model.BatchSize),
 				conv.WithGain(data.ReLuGain),
 			),
+			lnorm.NewLayerNorm(model.BatchSize),
 			activation.NewReLu(),
 
 			reshape.New(func(iw, ih, id int) (int, int, int) {
@@ -72,6 +75,7 @@ func NetworkConstructor() func() model.Network {
 				fc.WithBatchSize(model.BatchSize),
 				fc.WithGain(data.LinearGain),
 			),
+			lnorm.NewLayerNorm(model.BatchSize),
 		})
 	}
 }

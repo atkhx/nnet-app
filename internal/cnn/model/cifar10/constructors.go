@@ -1,9 +1,7 @@
 package cifar10
 
 import (
-	"fmt"
 	"log"
-	"os"
 
 	"github.com/atkhx/nnet/data"
 	"github.com/atkhx/nnet/dataset"
@@ -43,12 +41,14 @@ func NetworkConstructor() func() model.Network {
 					3,
 				),
 				conv.WithFilterSize(3),
-				conv.WithFiltersCount(10),
+				conv.WithFiltersCount(64),
 				conv.WithPadding(1),
 				conv.WithBatchSize(model.BatchSize),
 				conv.WithGain(data.ReLuGain),
 			),
-			lnorm.NewLayerNorm(cifar_10.ImageHeight, 10),
+			//lnorm.NewLayerNorm(cifar_10.ImageHeight, 10),
+
+			lnorm.NewLayerNorm(model.BatchSize),
 			activation.NewReLu(),
 
 			// --------------------------------------------------------
@@ -74,7 +74,7 @@ func NetworkConstructor() func() model.Network {
 				maxpooling.WithInputSize(
 					32,
 					32,
-					10,
+					64,
 				),
 				maxpooling.FilterSize(2),
 				maxpooling.Stride(2),
@@ -86,54 +86,77 @@ func NetworkConstructor() func() model.Network {
 				conv.WithInputSize(
 					16,
 					16,
-					10,
+					64,
 				),
 				conv.WithFilterSize(3),
-				conv.WithFiltersCount(10),
+				conv.WithFiltersCount(32),
 				conv.WithPadding(1),
 				conv.WithBatchSize(model.BatchSize),
 				conv.WithGain(data.ReLuGain),
 			),
-			lnorm.NewLayerNorm(cifar_10.ImageHeight, 10),
+			//lnorm.NewLayerNorm(cifar_10.ImageHeight, 10),
+			lnorm.NewLayerNorm(model.BatchSize),
+			activation.NewReLu(),
+
+			maxpooling.New(
+				maxpooling.WithInputSize(
+					16,
+					16,
+					32,
+				),
+				maxpooling.FilterSize(2),
+				maxpooling.Stride(2),
+			),
+
+			conv.New(
+				conv.WithInputSize(
+					8,
+					8,
+					32,
+				),
+				conv.WithFilterSize(3),
+				conv.WithFiltersCount(16),
+				conv.WithPadding(1),
+				conv.WithBatchSize(model.BatchSize),
+				conv.WithGain(data.ReLuGain),
+			),
+			//lnorm.NewLayerNorm(cifar_10.ImageHeight, 10),
+			lnorm.NewLayerNorm(model.BatchSize),
 			activation.NewReLu(),
 
 			// --------------------------------------------------------
 
-			conv.New(
-				conv.WithInputSize(
-					16,
-					16,
-					10,
-				),
-				conv.WithFilterSize(3),
-				conv.WithFiltersCount(10),
-				conv.WithPadding(1),
-				conv.WithBatchSize(model.BatchSize),
-				conv.WithGain(data.ReLuGain),
-			),
-			lnorm.NewLayerNorm(16, 8),
-			activation.NewReLu(),
+			//conv.New(
+			//	conv.WithInputSize(
+			//		16,
+			//		16,
+			//		10,
+			//	),
+			//	conv.WithFilterSize(3),
+			//	conv.WithFiltersCount(10),
+			//	conv.WithPadding(1),
+			//	conv.WithBatchSize(model.BatchSize),
+			//	conv.WithGain(data.ReLuGain),
+			//),
+			////lnorm.NewLayerNorm(16, 8),
+			//lnorm.NewLayerNorm(model.BatchSize),
+			//activation.NewReLu(),
 
 			// --------------------------------------------------------
 
 			reshape.New(func(iw, ih, id int) (int, int, int) {
-				fmt.Println("iw, ih, id", iw, ih, id)
-				fmt.Println("ow, oh, od", iw*ih, id, 1)
-				fmt.Println("-------------------------")
-				os.Exit(1)
-
 				return iw * ih, id, 1
 			}),
 
 			fc.New(
-				fc.WithInputSize(16*16*10),
+				fc.WithInputSize(8*8*16),
 				fc.WithLayerSize(10),
 				fc.WithBiases(false),
 				fc.WithBatchSize(model.BatchSize),
 				fc.WithGain(data.ReLuGain),
 			),
-
-			lnorm.NewLayerNorm(10, 1),
+			lnorm.NewLayerNorm(model.BatchSize),
+			activation.NewReLu(),
 		})
 	}
 }

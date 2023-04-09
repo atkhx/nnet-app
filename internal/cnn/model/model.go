@@ -22,7 +22,7 @@ import (
 	"github.com/atkhx/nnet-app/internal/cnn/nnet-web/notifications"
 )
 
-const BatchSize = 4
+const BatchSize = 2
 
 func New(
 	networkConstructor func() Network,
