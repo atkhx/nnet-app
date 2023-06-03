@@ -2,110 +2,68 @@ package blocks
 
 import (
 	"fmt"
-	"sort"
 
-	"github.com/atkhx/nnet/data"
+	"github.com/atkhx/nnet/num"
 
 	"github.com/atkhx/nnet-app/internal/cnn/nnet-web/images"
 )
 
-func NewCNNPredictionBlocks(inputs, output, target *data.Data, labels []string) ([]cnnPredictionBlock, error) {
+func NewCNNPredictionBlocks(inputs, output, target *num.Data, classes []string) ([]cnnPredictionBlock, error) {
 	var result []cnnPredictionBlock
 
-	//imageChanCount := inputs.RowsCount / target.RowsCount
-	imageChanCount := inputs.Data.H
+	imageChanCount := inputs.Dims.H
 
 	var image [][]byte
 	var err error
 
 	if imageChanCount == 1 {
-		image, err = images.CreateGrayscaleImagesFromDataMatrixesWithAverageValues(inputs.Data)
+		image, err = images.CreateGrayscaleImagesFromData(inputs.Dims, inputs.Data)
 		if err != nil {
 			return nil, err
 		}
 	} else if imageChanCount == 3 {
-		image, err = images.CreateRGBImagesFromDataMatrixesWithAverageValues(inputs.Data)
+		image, err = images.CreateRGBImagesFromData(inputs.Dims, inputs.Data)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		fmt.Println("inputs.GetDims()", inputs.GetDims())
-		fmt.Println("target.GetDims()", target.GetDims())
+		fmt.Println("inputs.GetDims()", inputs.Dims)
+		fmt.Println("target.GetDims()", target.Dims)
 		panic(fmt.Sprintf("to much image channels: %d", imageChanCount))
 	}
 
-	for row := 0; row < target.Data.H; row++ {
-		_, outputIndex := output.Data.GetRow(row, 0).GetMax()
-		_, targetIndex := target.Data.GetRow(row, 0).GetMax()
+	W := target.Dims.W
+	for row := 0; row < target.Dims.H; row++ {
+		outrow := output.Data[row*W : ((row + 1) * W)].Copy()
+		outrow.Softmax()
+
+		targetRow := target.Data[row*W : ((row + 1) * W)].Copy()
+		targetRow.Softmax()
+
+		outputIndex, _ := outrow.MaxKeyVal()
+		targetIndex, _ := targetRow.MaxKeyVal()
 
 		var predictions []cnnPredictionItem
 
-		outputRowData := output.Data.GetRow(row, 0).Data
-		for i := 0; i < len(outputRowData); i++ {
-			prediction := outputRowData[i]
+		for i := 0; i < len(outrow); i++ {
+			prediction := outrow[i]
 			predictions = append(predictions, cnnPredictionItem{
 				Index:   i,
-				Label:   labels[i],
+				Label:   classes[i],
 				Value:   prediction,
 				Percent: int(100 * prediction),
 			})
 		}
 
 		result = append(result, cnnPredictionBlock{
-			Target:      labels[targetIndex],
-			Output:      labels[outputIndex],
+			Target:      classes[targetIndex],
+			Output:      classes[outputIndex],
 			Image:       image[row],
 			Valid:       targetIndex == outputIndex,
 			Predictions: predictions,
 		})
 	}
 	return result, nil
-}
-
-func NewCNNPredictionBlock2(inputs, output, target *data.Data, labels []string) (*cnnPredictionBlock, error) {
-	outputIndex := 0
-	targetIndex := 0
-
-	var predictions []cnnPredictionItem
-
-	for i := 0; i < len(output.Data.Data); i++ {
-		if i == 0 || output.Data.Data[i] > output.Data.Data[outputIndex] {
-			outputIndex = i
-		}
-
-		if target.Data.Data[i] == 1 {
-			targetIndex = i
-		}
-
-		predictions = append(predictions, cnnPredictionItem{
-			Index:   i,
-			Label:   labels[i],
-			Value:   output.Data.Data[i],
-			Percent: int(100 * output.Data.Data[i]),
-		})
-	}
-
-	sort.Slice(predictions, func(i, j int) bool {
-		return predictions[i].Percent > predictions[j].Percent || predictions[i].Index == targetIndex
-	})
-	//
-	//if len(predictions) > 3 {
-	//	predictions = predictions[:3]
-	//}
-
-	image, err := images.CreateGrayscaleImagesFromDataMatrixesWithAverageValues(inputs.Data)
-	//image, err := images.CreateImageFromData(inputs)
-	if err != nil {
-		return nil, err
-	}
-
-	return &cnnPredictionBlock{
-		Target:      labels[targetIndex],
-		Output:      labels[outputIndex],
-		Image:       image[0],
-		Valid:       targetIndex == outputIndex,
-		Predictions: predictions,
-	}, nil
 }
 
 type cnnPredictionItem struct {

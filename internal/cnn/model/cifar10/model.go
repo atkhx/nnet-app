@@ -15,7 +15,6 @@ func CreateModel(
 
 	return model.New(
 		NetworkConstructor(),
-		TrainerConstructor(),
 		notifications.New(clientId, bus),
 		dataset,
 		"./cnn-cifar-10.json",

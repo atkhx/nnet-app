@@ -1,9 +1,9 @@
-package cifar10
+package cifar100
 
 import (
 	"log"
 
-	cifar_10 "github.com/atkhx/nnet/dataset/cifar-10"
+	cifar_100 "github.com/atkhx/nnet/dataset/cifar-100"
 	"github.com/atkhx/nnet/initializer"
 	"github.com/atkhx/nnet/layer"
 	nnetmodel "github.com/atkhx/nnet/model"
@@ -14,10 +14,10 @@ import (
 	"github.com/atkhx/nnet-app/internal/cnn/model"
 )
 
-func CreateDataset(datasetPath string) *cifar_10.Dataset {
-	d, err := cifar_10.CreateTrainingDataset(datasetPath)
+func CreateDataset(datasetPath string) *cifar_100.Dataset {
+	d, err := cifar_100.CreateTrainingDataset(datasetPath)
 	if err != nil {
-		log.Fatalln(errors.Wrap(err, "can't open train cifar-10 dataset"))
+		log.Fatalln(errors.Wrap(err, "can't open train cifar-100 dataset"))
 	}
 	return d
 }
@@ -55,7 +55,7 @@ func NetworkConstructor() func() *nnetmodel.Sequential {
 				layer.NewLNorm(),
 				layer.NewReLu(),
 
-				layer.NewLinear(10, initializer.KaimingNormalLinear),
+				layer.NewLinear(100, initializer.KaimingNormalLinear),
 				layer.NewLNorm(),
 			},
 			optimizer.Adadelta(optimizer.Ro, optimizer.Eps),

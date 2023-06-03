@@ -1,4 +1,4 @@
-package mnist
+package cifar100
 
 import (
 	"github.com/atkhx/nnet-app/internal/app"
@@ -11,15 +11,12 @@ func CreateModel(
 	clientId string,
 	bus *eventsbus.EventsBus,
 ) (*model.NetModel, error) {
-	dataset, err := CreateDataset(app.DatasetPathMNIST)
-	if err != nil {
-		return nil, err
-	}
+	dataset := CreateDataset(app.DatasetPathCIFAR100)
 
 	return model.New(
 		NetworkConstructor(),
 		notifications.New(clientId, bus),
 		dataset,
-		"./cnn-mnist.json",
+		"./cnn-cifar-100.json",
 	), nil
 }
