@@ -134,6 +134,10 @@ func (m *NetModel) TrainingStart() error {
 	loss := m.network.GetOutput().CrossEntropy(targets)
 	lossMean := loss.Mean()
 
+	forwardNodes := lossMean.GetForwardNodes()
+	backwardNodes := loss.GetBackwardNodes()
+	resetGradsNodes := loss.GetResetGradsNodes()
+
 	fmt.Println("train start")
 
 	testsCount := 0
@@ -169,18 +173,22 @@ func (m *NetModel) TrainingStart() error {
 				//fmt.Println(targets.StringData())
 				//fmt.Println(batchTarget.StringData())
 				//os.Exit(1)
-				m.network.Forward(sample.Input.Data)
+				//m.network.Forward(sample.Input.Data)
+				copy(m.network.GetInput().Data, sample.Input.Data)
+				forwardNodes.Forward()
+
 				success += m.isSuccessPrediction(m.network.GetOutput(), sample.Target)
 
-				loss.Forward()
-				lossMean.Forward()
-
-				//loss.ResetGrads(1)
+				//loss.Forward()
+				//lossMean.Forward()
+				//
+				//lossMean.ResetGrads(1)
+				//lossMean.Backward()
 				//loss.Backward()
-				lossMean.ResetGrads(1)
-				lossMean.Backward()
-				loss.Backward()
-				m.network.Backward()
+				//m.network.Backward()
+
+				resetGradsNodes.ResetGrad()
+				backwardNodes.Backward()
 
 				avgLoss += lossMean.Data[0]
 				m.network.Update()

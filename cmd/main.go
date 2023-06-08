@@ -7,6 +7,8 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/pkg/errors"
 
 	"github.com/atkhx/nnet-app/internal/app"
@@ -23,7 +25,6 @@ import (
 	"github.com/atkhx/nnet-app/internal/cnn/model/cifar100"
 	"github.com/atkhx/nnet-app/internal/cnn/model/mnist"
 
-	//"github.com/atkhx/nnet-app/internal/cnn/model/mnist"
 	"github.com/atkhx/nnet-app/internal/pkg/eventsbus"
 	"github.com/atkhx/nnet-app/internal/pkg/sequence"
 	"github.com/atkhx/nnet-app/internal/pkg/views"
@@ -59,6 +60,8 @@ func main() {
 		err = errors.Wrap(err, "can't create templates")
 		return
 	}
+
+	http.Handle("/metrics", promhttp.Handler())
 
 	wsActions := actions.NewRegistry()
 

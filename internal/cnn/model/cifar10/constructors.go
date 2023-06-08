@@ -27,9 +27,9 @@ func NetworkConstructor() func() *nnetmodel.Sequential {
 	size2 := 16
 	size3 := 8
 	size4 := 4
-	filtersCount1 := 16
-	filtersCount2 := 16
-	filtersCount3 := 16
+	filtersCount1 := 32
+	filtersCount2 := 32
+	filtersCount3 := 32
 
 	return func() *nnetmodel.Sequential {
 		result := nnetmodel.NewSequential(
@@ -51,12 +51,11 @@ func NetworkConstructor() func() *nnetmodel.Sequential {
 				layer.NewMaxPooling(size3, size3, 2, 0, 2),
 
 				layer.NewReshape(num.NewDims(size4*size4*filtersCount3, 1, model.BatchSize)),
-				layer.NewLinear(768, initializer.KaimingNormalReLU),
-				layer.NewLNorm(),
-				layer.NewReLu(),
-
+				//layer.NewLinear(768, initializer.KaimingNormalReLU),
+				//layer.NewLNorm(),
+				//layer.NewReLu(),
 				layer.NewLinear(10, initializer.KaimingNormalLinear),
-				layer.NewLNorm(),
+				//layer.NewLNorm(),
 			},
 			optimizer.Adadelta(optimizer.Ro, optimizer.Eps),
 		)
